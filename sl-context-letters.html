@@ -1,0 +1,212 @@
+
+<head>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+  <script src="jspsych-5.0.3/jspsych.js"></script>
+  <script src="jspsych-5.0.3/plugins/jspsych-letter-matching.js"></script>
+  <script src="jspsych-5.0.3/plugins/jspsych-single-stim.js"></script>
+  <script src="sequence.js"></script>
+  <link rel="stylesheet" href="jspsych/css/jspsych.css"></link>
+  <link href='https://fonts.googleapis.com/css?family=Roboto+Mono' rel='stylesheet' type='text/css'>
+  <style>
+    div.letter {
+      width: 80px;
+      font-size: 72px;
+      margin: auto;
+      margin-top: 80px;
+      text-align: center
+    }
+  </style>
+</head>
+<script>
+/* experiment parameters */
+
+  var letter_duration = 1000;
+  var letter_size = 300;
+
+  var reps = 2; // per block
+  var blocks = 4;
+
+  //all consonants
+  var cons = 'BCDFGHJKLMNPQRSTVWXYZ';
+
+  // the number of conditions (number of "words")
+  var num_conditions = 6;
+
+  // the number of predictable triples
+  var condition = Math.floor(Math.random() * num_conditions) + 1; 
+
+  ////////
+  /////generate n triples of letters (consonants), where each letter only appears in one triple////
+  /////(n == num_conditions == # of unpredictable + # of predictable)
+  ////////
+
+  //random order of consonants to draw from
+  var random_order = jsPsych.randomization.shuffle(cons.split(''));
+
+  // the number of predictable triples
+  var num_triples = condition;
+  // predictable 3 letter sequences (triples)
+  var triples = new Array(num_triples);
+  for (var i = 0; i < num_triples; i++) {
+    //gets the first num_triples number of 3-letter slices from the random string of consonants
+    triples[i] = random_order.slice(i*3, i*3+3);
+  }
+
+  ///////make the unpredictable sequences actually unpredictable by shuffling which 
+  ///////permutation of each group of 3 letters appears in each rep
+  //unpredictable 3 letter sequences
+  var unpredictable = new Array(num_conditions - num_triples);
+  for (var i = num_triples; i < num_conditions; i++) {
+    //gets the subsequent num_conditions number of 3-letter slices from the consonant string
+    unpredictable[i - num_triples] = random_order.slice(i*3, i*3+3);
+  }
+  //store the permutations of the unpredictable in an array of arrays called permutes
+  var permutes = new Array(unpredictable.length);
+  for (var i = 0; i < unpredictable.length; i++) {
+    //using the sequence.js function 'get_all_orders' to
+    var current_permutes = get_all_orders(unpredictable[i])['permutations'];
+    permutes[i] =  current_permutes;
+  }
+
+  //generate all permutations of the unpredictable sequences, and randomize order
+  var block_seqs = new Array(blocks);
+  var num_permutes_per_seq = 6; //3! == 6
+
+  for (var b = 0; b < blocks; b++) {
+    var seq = [];
+    for (var i = 0; i < reps; i++) {
+      var curr_permutes = [];
+      //for each unpredictable triple, push the next random permutation
+      //of that triple
+      for (var j = 0; j < (num_conditions - num_triples); j++) {
+        curr_permutes.push(permutes[j][i%num_permutes_per_seq]);
+      }
+
+      //add predictable triples to the permutations of the unpredictable triples
+      var curr = triples.concat(curr_permutes);
+      //shuffle the order of all triples (predictable and unpredictable)
+      curr = jsPsych.randomization.shuffle(curr);
+
+      //if we're not on the first rep of the first block,
+      if (i !== 0) {
+        //make sure that the beginning of this sequence doesn't equal the last of the last rep
+        //so that there are no repetitions
+        while (curr[0] == seq[seq.length - 1]) {
+          //console.log("equality, reshuffling from " + seq[seq.length - 1] + curr[0])
+          curr = jsPsych.randomization.shuffle(curr);
+        }
+      }
+      seq = seq.concat(curr);
+    } 
+    block_seqs[b] = seq;
+  }
+
+  //flatten the sequences so that we can easily iterate each trial
+  var block_seqs_flat = new Array(blocks);
+  for (var s=0; s < block_seqs.length; s++) {
+    block_seqs_flat[s] = flatten(block_seqs[s]);
+  }
+
+  var flat_seq_length = reps * num_conditions * 3; 
+  // quick check: each flat seq should be number of reps * number of words * length of words (3)
+  if (flat_seq_length !== block_seqs_flat[0].length) {
+    console.log("FAILED EQUALITY TEST, debug");
+  }
+
+  var predictable_letters = flatten(triples);
+  var unpredictable_letters = flatten(unpredictable);
+
+  //return the triple_type given a letter
+  function letter_type(letter) {
+    if ($.inArray(letter, predictable_letters)) {
+      return "predictable";
+    } else {
+      return "unpredictable";
+    }
+  }
+
+  //for each test block, make each trial in that block
+  test_blocks = [];
+  for (var b=0; b<blocks; b++) {
+    curr_block = [];
+    for (var i=0; i<block_seqs_flat[0].length; i++) {
+      //the first item of each block appears on its own
+      if (i === 0) {
+        curr_block.push({
+          item: block_seqs_flat[b][i],
+          prev_item: '',
+          prev_two_item: '',
+          triple_type: letter_type(block_seqs_flat[b][i])
+        });
+      }
+      //the second item appears with the first
+      else if (i === 1) {
+        curr_block.push({
+          item: block_seqs_flat[b][i],
+          prev_item: block_seqs_flat[b][i-1],
+          prev_two_item: '',
+          triple_type: letter_type(block_seqs_flat[b][i])
+        });
+      }
+      //otherwise, normal
+      else {
+        curr_block.push({
+          item: block_seqs_flat[b][i],
+          prev_item: block_seqs_flat[b][i-1],
+          prev_two_item: block_seqs_flat[b][i-2],
+          triple_type: letter_type(block_seqs_flat[b][i])
+        });
+      }
+    }
+
+    //after a block is created, push it to the test blocks array
+    test_blocks.push({
+      type: "letter-matching",
+      timeline: curr_block,
+      timing_post_trial: 0,
+      timing_duration: letter_duration,
+      square_size: letter_size
+    });
+  }
+
+  var feedback_block = {
+    type: 'single-stim',
+    stimulus: [function(){
+      var d = jsPsych.data.getLastTimelineData();
+      var rtsum = 0;
+      var accsum = 0;
+      var totalcount = 0;
+      for(var t = 0; t<d.length; t++){
+        if(typeof d[t].correct != 'undefined'){
+          if(d[t].correct){
+            accsum++;
+            rtsum += d[t].rt;
+          }
+          totalcount++;
+        }
+      }
+      var rt = Math.floor(rtsum/accsum);
+      var acc = Math.floor((accsum/totalcount)*100);
+      return '<p>This set of trials is complete.</p>'+
+        '<p>Your average response time was '+rt+' milliseconds, and you pressed '+
+        'the correct key '+acc+'% of the time.</p>'+
+        '<p>Press C when you are ready to continue.</p>';
+      }
+    ],
+    choices: ['C'],
+    timing_post_trial: 2000,
+    is_html: true
+  };
+
+  experiment = [];
+  for (var i = 0; i < test_blocks.length; i++) {
+    experiment.push(test_blocks[i]);
+    experiment.push(feedback_block);
+  }
+
+  jsPsych.init({
+    timeline: experiment
+  });
+  </script>
+
+</html>
