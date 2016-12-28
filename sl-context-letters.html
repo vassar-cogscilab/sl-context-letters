@@ -4,6 +4,10 @@
   <script src="jspsych-5.0.3/jspsych.js"></script>
   <script src="jspsych-5.0.3/plugins/jspsych-letter-matching.js"></script>
   <script src="jspsych-5.0.3/plugins/jspsych-single-stim.js"></script>
+  <script src="jspsych-5.0.3/plugins/jspsych-text.js"></script>
+  <script src="jspsych-5.0.3/plugins/jspsych-call-function.js"></script>
+  <script src="jspsych-5.0.3/plugins/jspsych-survey-text.js"></script>
+  <script src="jspsych-5.0.3/plugins/jspsych-instructions.js"></script>
   <script src="sequence.js"></script>
   <link rel="stylesheet" href="jspsych/css/jspsych.css"></link>
   <link href='https://fonts.googleapis.com/css?family=Roboto+Mono' rel='stylesheet' type='text/css'>
@@ -24,7 +28,7 @@
   var letter_size = 300;
 
   var reps = 2; // per block
-  var blocks = 4;
+  var blocks = 1;
 
   //all consonants
   var cons = 'BCDFGHJKLMNPQRSTVWXYZ';
@@ -198,14 +202,104 @@
     is_html: true
   };
 
+  /* main experiment built */ 
   experiment = [];
   for (var i = 0; i < test_blocks.length; i++) {
     experiment.push(test_blocks[i]);
     experiment.push(feedback_block);
   }
 
+
+  /* post-experiment instructions */
+
+  var structured_debrief_timeline = [];
+
+  var sdb_intro = {
+    type: 'single-stim',
+    choices: ['enter'],
+    stimulus: ['<p>You have completed the task. We have a couple of questions about your impressions of the experiment, and then you will be finished.</p><p>Press enter to view the first question.</p>'],
+    is_html: true
+  }
+  structured_debrief_timeline.push(sdb_intro);
+
+  var sdb_1 = {
+    type: 'survey-text',
+    questions: [
+      ['<p>What do you think the purpose of the experiment was?</p>'],
+      ['<p>Did you notice any patterns in the sequence of letters? (A simple yes or no answer is fine, but you can describe any patterns you think you noticed in more detail if you wish.)</p>']
+    ],
+    rows: [
+      [10],
+      [10]
+    ]
+  }
+  structured_debrief_timeline.push(sdb_1);
+
+  var sdb_2 = {
+    type: 'survey-text',
+    questions: [
+      [
+        '<p>Some letters occurred in the same order every time they were presented. If you noticed any of these orders, write them in the box below, with one order per line.</p><p> For example: if you noticed that X was always followed by Z, you would write XZ on a line. If the pattern was longer, for example X followed by Z followed by Q, then write XZQ.</p>'
+      ]
+    ],
+    rows: [
+      [10]
+    ],
+    columns: [
+      [30]
+    ]
+  }
+  structured_debrief_timeline.push(sdb_2);
+
+  var structured_debrief = {
+    timeline: structured_debrief_timeline
+  }
+
+  experiment.push(structured_debrief);
+
+  /* save data */
+
+  var save_data_block = {
+    type: 'call-function',
+    func: save_data,
+    timing_post_trial: 0
+  };
+
+  function save_data() {
+    var data = jsPsych.data.getData();
+
+    $.ajax({
+      type: 'post',
+      cache: false,
+      url: '../common/submit_data_mysql_v4plus.php',
+      data: {
+        "table": "sl_typing_exp_2",
+        "json": JSON.stringify(data)
+      },
+      success: function(data2) {
+        console.log(data2);
+      }
+    });
+
+  }
+
+  experiment.push(save_data_block);
+
+  var final_screen = {
+    type: 'single-stim',
+    stimulus: ['<p>The experiment is complete! Thank you for participating.</p><p>In this experiment, we are testing theories about how people learn patterns. The sequence ' +
+      'of letters was not random: certain letters appeared in a fixed order. Some people saw lots of patterns, while other people only saw occassional patterns. We are interested in how these differences affect the rate of learning. ' +
+      'We can measure learning by looking at which letters people tend to get faster at over the course of the experiment. When people learn these patterns, they speed up on pressing keys that are part of the pattern, sometimes without even knowing ' +
+      'that they have learned the pattern.</p><p>Press Q to complete the experiment.</p>'
+    ],
+    is_html: true,
+    choices: ['q']
+  }
+  experiment.push(final_screen);
+
   jsPsych.init({
-    timeline: experiment
+    timeline: experiment,
+    //show_progress_bar: true <-- doesn't seem to work
   });
   </script>
 
