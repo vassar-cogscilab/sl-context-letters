@@ -21,14 +21,16 @@
     }
   </style>
 </head>
+<body></body>
 <script>
 /* experiment parameters */
 
-  var letter_duration = 700;
-  var letter_size = 300;
+  var letter_duration = 500;
+  var letter_size = 200;
 
-  var reps = 1; // per block
-  var blocks = 2;
+  // should be 12, 6
+  var reps = 12; // per block
+  var blocks = 6;
 
   //all consonants
   var cons = 'BCDFGHJKLMNPQRSTVWXYZ';
@@ -37,7 +39,8 @@
   var num_conditions = 6;
 
   // the number of predictable triples
-  var condition = Math.floor(Math.random() * num_conditions) + 1; 
+  var condition = Math.floor(Math.random() * num_conditions) + 1; // get rid of this + 1 if a 0 condition is desired!
+  jsPsych.data.addProperties({num_predictable_triples: condition});
 
   ////////
   /////generate n triples of letters (consonants), where each letter only appears in one triple////
@@ -202,8 +205,63 @@
     is_html: true
   };
 
-  /* main experiment built */ 
   experiment = [];
+
+  /* instructions */
+  /*" If you respond correctly, " +
+      "the box will turn green. If you respond incorrectly, the box will turn red. Respond as quickly as possible.</p>"*/
+  instructions = {
+    type: 'instructions',
+    pages: ["<p>Hi there! Welcome to the experiment.</p>", "This experiment involves playing a simple game. You will see a letter drop down into a grey box. Your job is simple: press the key that matches the letter. </p> <p>The goal of the game is to go as quickly as possible without making a mistake.", "<p>Here's a quick practice round to get used to the game. As quickly as you can, press the key that matches the letter. </p><p>When you're ready, click next."],
+    show_clickable_nav: true
+  }
+
+  practice_seq = 'ABCDEFG'.split('');
+  practice_trials = [];
+
+  for (i = 0; i < practice_seq.length; i++) {
+    practice_trials.push({
+      item: practice_seq[i] || '',
+      prev_item: practice_seq[i-1] || '',
+      prev_two_item: practice_seq[i-2] || '',
+      triple_type: 'practice'
+    })
+  }
+
+  practice_block = {
+    type: "letter-matching",
+    timeline: practice_trials,
+    timing_post_trial: 0,
+    timing_duration: letter_duration,
+    square_size: letter_size
+  };
+  /*
+  var final_instructions_block = {
+    type: 'single-stim',
+    stimuli: [
+      "<p>The practice phase is over.</p>" +
+      "<p>Now you will perform the same task, and we will measure how quickly you can press each key. " +
+      "It is important that you try to go as quickly as possible.</p>"+
+      "<p>There will be six five-minute long rounds. After each round, we will show you how fast you were during that round.</p>"+
+      "<p>Press enter to continue.</p>"
+    ],
+    is_html: true,
+    choices: ['enter']
+  }
+
+  intro_timeline.push(final_instructions_block);*/
+
+  test_instructions = {
+    type: 'instructions',
+    pages: ["<p>You are now ready to begin the experiment. The experiment will consist of six five-minute long rounds. After each round, we will show you how fast you were during that round. You may exit the experiment at any time by closing your browser window.</p><p>Click next to begin the experiment."],
+    show_clickable_nav: true
+  }
+
+  experiment.push(instructions);
+  experiment.push(practice_block);
+  experiment.push(test_instructions);
+
+  /* main experiment built */ 
   for (var i = 0; i < test_blocks.length; i++) {
     experiment.push(test_blocks[i]);
     experiment.push(feedback_block);
@@ -249,7 +307,20 @@
       [30]
     ]
   }
+
+  var sdb_3 = {
+    type: 'survey-text',
+    questions: [
+        ['<p>Age:</p>'],
+        ['<p>Gender:</p>']
+    ],
+    rows: [
+      [1],
+      [1]
+    ]
+  }
   structured_debrief_timeline.push(sdb_2);
+  structured_debrief_timeline.push(sdb_3);
 
   var structured_debrief = {
     timeline: structured_debrief_timeline
@@ -273,7 +344,7 @@
       cache: false,
       url: '../common/submit_data_mysql_v4plus.php',
       data: {
-        "table": "sl_typing_exp_2",
+        "table": "sl_context_letters",
         "json": JSON.stringify(data)
       },
       success: function(data2) {
@@ -287,10 +358,7 @@
 
   var final_screen = {
     type: 'single-stim',
-    stimulus: ['<p>The experiment is complete! Thank you for participating.</p><p>In this experiment, we are testing theories about how people learn patterns. The sequence ' +
-      'of letters was not random: certain letters appeared in a fixed order. Some people saw lots of patterns, while other people only saw occassional patterns. We are interested in how these differences affect the rate of learning. ' +
-      'We can measure learning by looking at which letters people tend to get faster at over the course of the experiment. When people learn these patterns, they speed up on pressing keys that are part of the pattern, sometimes without even knowing ' +
-      'that they have learned the pattern.</p><p>Press Q to complete the experiment.</p>'
+    stimulus: ['<p>The experiment is complete! Thank you for participating.</p><p>In this experiment, we are studying how people learn new sequential patterns (like melodies in music or phrases in language). We will analyze your pattern of responses, particularly how fast you responded, to figure out if and when you learned different parts of the sequential patterns that you saw. </p><p>If you felt like there wasn’t much of a pattern, don’t fret: different people saw different kinds of patterns in this experiment. Some people saw sequences with lots of repeating patterns, and others saw sequences with only a few repeating patterns. This variation will allow us to learn something about how the human mind uses different kinds of information to discover patterns. </p><p> Thanks so much for participating. If you have any questions, you can contact the researcher at jdeleeuw@vassar.edu. </p><p>Press q to exit the experiment.'//Keep this variation in difficulty in mind as you evaluate your final score.'
     ],
     is_html: true,
     choices: ['q']
