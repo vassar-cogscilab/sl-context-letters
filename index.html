@@ -8,6 +8,7 @@
   <script src="jspsych-5.0.3/plugins/jspsych-call-function.js"></script>
   <script src="jspsych-5.0.3/plugins/jspsych-survey-text.js"></script>
   <script src="jspsych-5.0.3/plugins/jspsych-instructions.js"></script>
+  <script src="jspsych-5.0.3/plugins/jspsych-button-response.js"></script>
   <script src="sequence.js"></script>
   <link rel="stylesheet" href="jspsych-5.0.3/css/jspsych.css"></link>
   <link href='https://fonts.googleapis.com/css?family=Roboto+Mono' rel='stylesheet' type='text/css'>
@@ -208,11 +209,17 @@
   experiment = [];
 
   /* instructions */
-  /*" If you respond correctly, " +
-      "the box will turn green. If you respond incorrectly, the box will turn red. Respond as quickly as possible.</p>"*/
+  consent_form = {
+    type: "button-response",
+    stimulus: "<p>This is a research project conducted at Vassar College. In this experiment you will play a simple computer game in which you try to quickly press keys on your keyboard that correspond to particular symbols on the screen. Our experiment investigates how different factors related to this game change how quickly people play. The experiment will take approximately [10-60] minutes to complete. You will receive a payment of [$1.50-7.00] upon completion of the experiment. The data we collect during the experiment are not linked to potentially identifying information, including your account information on [Mechanical Turk / Prolific]. These data will be used for research purposes. You are free to stop the experiment by closing your browser window at any time. If you have any questions, you can contact Dr. Joshua de Leeuw at jdeleeuw@vassar.edu.</p> <p>By clicking \"I agree\", you affirm that you are at least 18 years of age, which is the minimum age to participate in this study, and that you understand the nature of your participation in this research. If you do not wish to participate, please close this window.",
+    is_html: true,
+    choices: ["I agree"]
+  };
+
+
   instructions = {
     type: 'instructions',
-    pages: ["<p>Hi there! Welcome to the experiment.</p>", "This experiment involves playing a simple game. You will see a letter drop down into a grey box. Your job is simple: press the key that matches the letter. </p> <p>The goal of the game is to go as quickly as possible without making a mistake.", "<p>Here's a quick practice round to get used to the game. As quickly as you can, press the key that matches the letter. </p><p>When you're ready, click next."],
+    pages: ["<p>Hi there! Welcome to the experiment.</p> <p>This experiment involves playing a simple game. You will see a letter drop down into a grey box. Your job is simple: press the key that matches the letter. </p> <p>The goal of the game is to go as quickly as possible without making a mistake. If you respond correctly, the box will turn green. If you respond incorrectly, the box will turn red.", "<p>Here's a quick practice round to get used to the game. As quickly as you can, press the key that matches the letter. </p><p>When you're ready, click Next."],
     show_clickable_nav: true
   }
 
@@ -235,30 +242,32 @@
     timing_duration: letter_duration,
     square_size: letter_size
   };
-  /*
-  var final_instructions_block = {
-    type: 'single-stim',
-    stimuli: [
-      "<p>The practice phase is over.</p>" +
-      "<p>Now you will perform the same task, and we will measure how quickly you can press each key. " +
-      "It is important that you try to go as quickly as possible.</p>"+
-      "<p>There will be six five-minute long rounds. After each round, we will show you how fast you were during that round.</p>"+
-      "<p>Press enter to continue.</p>"
-    ],
-    is_html: true,
-    choices: ['enter']
-  }
 
-  intro_timeline.push(final_instructions_block);*/
+  repeat_trial = {
+    type: "button-response",
+    stimulus: "<p>You have completed the practice round. If you'd like to try the practice round again, click \"More Practice\". If you understand the instructions and are ready to play, click the \"Next\" button below.</p>",
+    is_html: true,
+    choices: ["More Practice", "Next"]
+  };
+
+  practice_loop = {
+    timeline: [practice_block, repeat_trial],
+    loop_function: function(data){
+        //console.log(jsPsych.data.getLastTrialData().button_pressed);
+        return (jsPsych.data.getLastTrialData().button_pressed == 0);
+    }
+  }
 
   test_instructions = {
     type: 'instructions',
-    pages: ["<p>You are now ready to begin the experiment. The experiment will consist of six five-minute long rounds. After each round, we will show you how fast you were during that round. You may exit the experiment at any time by closing your browser window.</p><p>Click next to begin the experiment."],
+    pages: ["<p>Now you will perform the same task, and we will measure how quickly you can press each key. It is important that you try to go as quickly as possible. </p><p>There will be six five-minute long rounds. After each round, we will show you how fast you were during that round.</p><p>Click Next to begin the experiment."],
     show_clickable_nav: true
   }
 
+  //push the pre-experiment consent form, instructions and practice
+  experiment.push(consent_form);
   experiment.push(instructions);
-  experiment.push(practice_block);
+  experiment.push(practice_loop);
   experiment.push(test_instructions);
 
   /* main experiment built */ 
@@ -358,7 +367,7 @@
 
   var final_screen = {
     type: 'single-stim',
-    stimulus: ['<p>The experiment is complete! Thank you for participating.</p><p>In this experiment, we are studying how people learn new sequential patterns (like melodies in music or phrases in language). We will analyze your pattern of responses, particularly how fast you responded, to figure out if and when you learned different parts of the sequential patterns that you saw. </p><p>If you felt like there wasn’t much of a pattern, don’t fret: different people saw different kinds of patterns in this experiment. Some people saw sequences with lots of repeating patterns, and others saw sequences with only a few repeating patterns. This variation will allow us to learn something about how the human mind uses different kinds of information to discover patterns. </p><p> Thanks so much for participating. If you have any questions, you can contact the researcher at jdeleeuw@vassar.edu. </p><p>Press q to exit the experiment.'//Keep this variation in difficulty in mind as you evaluate your final score.'
+    stimulus: ['<p>The experiment is complete! Thank you for participating.</p><p>In this experiment, we are studying how people learn new sequential patterns (like melodies in music or phrases in language). We will analyze your pattern of responses, particularly how fast you responded, to figure out if and when you learned different parts of the sequential patterns that you saw. </p><p>If you felt like there wasn\'t much of a pattern, don\'t fret: different people saw different kinds of patterns in this experiment. Some people saw sequences with lots of repeating patterns, and others saw sequences with only a few repeating patterns. This variation will allow us to learn something about how the human mind uses different kinds of information to discover patterns. </p><p> Thanks so much for participating. If you have any questions, you can contact the researcher at jdeleeuw@vassar.edu. </p><p>Press q to exit the experiment.'//Keep this variation in difficulty in mind as you evaluate your final score.'
     ],
     is_html: true,
     choices: ['q']
