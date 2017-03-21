@@ -136,7 +136,7 @@
   //for each test block, make each trial in that block
   test_blocks = [];
   for (var b=0; b<blocks; b++) {
-     = [];
+    var curr_block = [];
     for (var i=0; i<block_seqs_flat[0].length; i++) {
       //the first item of each block appears on its own
       if (i === 0) {
