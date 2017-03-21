@@ -60,7 +60,7 @@
     triples[i] = random_order.slice(i*3, i*3+3);
   }
 
-  ///////make the unpredictable sequences actually unpredictable by shuffling which 
+  ///////make the unpredictable sequences actually unpredictable by shuffling which
   ///////permutation of each group of 3 letters appears in each rep
   //unpredictable 3 letter sequences
   var unpredictable = new Array(num_conditions - num_triples);
@@ -105,7 +105,7 @@
         }
       }
       seq = seq.concat(curr);
-    } 
+    }
     block_seqs[b] = seq;
   }
 
@@ -115,7 +115,7 @@
     block_seqs_flat[s] = flatten(block_seqs[s]);
   }
 
-  var flat_seq_length = reps * num_conditions * 3; 
+  var flat_seq_length = reps * num_conditions * 3;
   // quick check: each flat seq should be number of reps * number of words * length of words (3)
   if (flat_seq_length !== block_seqs_flat[0].length) {
     console.log("FAILED EQUALITY TEST, debug");
@@ -136,7 +136,7 @@
   //for each test block, make each trial in that block
   test_blocks = [];
   for (var b=0; b<blocks; b++) {
-    curr_block = [];
+     = [];
     for (var i=0; i<block_seqs_flat[0].length; i++) {
       //the first item of each block appears on its own
       if (i === 0) {
@@ -144,7 +144,7 @@
           item: block_seqs_flat[b][i],
           prev_item: '',
           prev_two_item: '',
-          triple_type: letter_type(block_seqs_flat[b][i])
+          data: {triple_type: letter_type(block_seqs_flat[b][i])}
         });
       }
       //the second item appears with the first
@@ -153,7 +153,7 @@
           item: block_seqs_flat[b][i],
           prev_item: block_seqs_flat[b][i-1],
           prev_two_item: '',
-          triple_type: letter_type(block_seqs_flat[b][i])
+          data: {triple_type: letter_type(block_seqs_flat[b][i])}
         });
       }
       //otherwise, normal
@@ -162,7 +162,7 @@
           item: block_seqs_flat[b][i],
           prev_item: block_seqs_flat[b][i-1],
           prev_two_item: block_seqs_flat[b][i-2],
-          triple_type: letter_type(block_seqs_flat[b][i])
+          data: { triple_type: letter_type(block_seqs_flat[b][i])}
         });
       }
     }
@@ -270,7 +270,7 @@
   experiment.push(practice_loop);
   experiment.push(test_instructions);
 
-  /* main experiment built */ 
+  /* main experiment built */
   for (var i = 0; i < test_blocks.length; i++) {
     experiment.push(test_blocks[i]);
     experiment.push(feedback_block);
